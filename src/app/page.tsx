@@ -146,8 +146,8 @@ export default async function HomePage() {
           counts every week from a flavor&apos;s debut through the latest tracked
           menu. Lower score = rarer. Flavors need 8 eligible weeks before they
           qualify — otherwise a brand-new debut would automatically be
-          &ldquo;legendary.&rdquo; Buckets: &lt;8% Legendary, &lt;20% Rare,
-          &lt;40% Uncommon, else Common.
+          &ldquo;legendary.&rdquo; Buckets: &lt;3% Legendary, &lt;8% Rare,
+          &lt;15% Uncommon, else Common.
         </p>
         <p className="mt-2 leading-relaxed text-stone-600">
           <strong>Debuts</strong>

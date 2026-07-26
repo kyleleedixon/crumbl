@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { scrapeCrumblOfficial } from "@/lib/scrape/crumbl-official";
 import { ingestScrapedWeek } from "@/lib/ingest";
-import { weekMenu } from "@/lib/rarity";
+import { weekInsights } from "@/lib/rarity";
 import { weeklyMenuTweet } from "@/lib/tweet-copy";
 import { postTweet } from "@/lib/twitter";
 import { siteUrl, isAuthorizedCron } from "@/lib/env";
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   const scraped = await scrapeCrumblOfficial();
   const ingested = await ingestScrapedWeek(scraped);
-  const menu = await weekMenu(ingested.weekId);
+  const menu = await weekInsights(ingested.weekId);
 
   const dryRun =
     request.headers.get("x-dry-run") === "1" ||

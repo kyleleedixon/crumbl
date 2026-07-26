@@ -28,9 +28,9 @@ export function bucketFor(row: {
 }): Bucket {
   if (row.eligibleWeeks < MIN_ELIGIBLE_WEEKS) return "new";
   const pct = row.rarity * 100;
-  if (pct < 8) return "legendary";
-  if (pct < 20) return "rare";
-  if (pct < 40) return "uncommon";
+  if (pct < 3) return "legendary";
+  if (pct < 8) return "rare";
+  if (pct < 15) return "uncommon";
   return "common";
 }
 
@@ -181,6 +181,73 @@ export async function weekMenu(weekId: number) {
     .innerJoin(flavors, eq(flavors.id, appearances.flavorId))
     .where(eq(appearances.weekId, weekId))
     .orderBy(asc(flavors.name));
+}
+
+export type WeekMenuItemStats = Awaited<
+  ReturnType<typeof weekMenu>
+>[number] & {
+  bucket: Bucket;
+  rarity: number;
+  appearanceCount: number;
+  eligibleWeeks: number;
+  firstSeen: string;
+  previousAppearance: string | null;
+  weeksSinceLast: number | null;
+};
+
+export async function weekInsights(weekId: number): Promise<WeekMenuItemStats[]> {
+  const [current] = await db
+    .select({ startDate: weeks.startDate })
+    .from(weeks)
+    .where(eq(weeks.id, weekId));
+  if (!current) return [];
+
+  const menu = await weekMenu(weekId);
+  const latest = (await latestWeekStart()) ?? current.startDate;
+  const slugs = menu.map((m) => m.slug);
+  const timelines = await flavorTimelines(slugs);
+
+  const previous = slugs.length
+    ? await db
+        .select({
+          slug: flavors.slug,
+          previousDate: sql<string | null>`max(${weeks.startDate})`,
+        })
+        .from(appearances)
+        .innerJoin(flavors, eq(flavors.id, appearances.flavorId))
+        .innerJoin(weeks, eq(weeks.id, appearances.weekId))
+        .where(
+          and(
+            inArray(flavors.slug, slugs),
+            sql`${weeks.startDate} < ${current.startDate}`,
+          ),
+        )
+        .groupBy(flavors.slug)
+    : [];
+  const prevMap = new Map(previous.map((p) => [p.slug, p.previousDate]));
+
+  return menu.map((m) => {
+    const t = timelines.get(m.slug);
+    const firstSeen = t?.firstSeen ?? current.startDate;
+    const appearanceCount = t?.appearanceCount ?? 1;
+    const eligibleWeeks = Math.max(1, weeksBetween(firstSeen, latest) + 1);
+    const rarity = appearanceCount / eligibleWeeks;
+    const bucket = bucketFor({ rarity, eligibleWeeks });
+    const prev = prevMap.get(m.slug) ?? null;
+    const weeksSinceLast = prev
+      ? weeksBetween(prev, current.startDate)
+      : null;
+    return {
+      ...m,
+      firstSeen,
+      appearanceCount,
+      eligibleWeeks,
+      rarity,
+      bucket,
+      previousAppearance: prev,
+      weeksSinceLast,
+    };
+  });
 }
 
 export type FlavorTimeline = {

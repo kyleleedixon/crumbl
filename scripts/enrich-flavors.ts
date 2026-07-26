@@ -84,9 +84,21 @@ function candidatesFor(
     if (bare.startsWith(hpBare) || hpBare.startsWith(bare)) set.add(hp);
   }
 
-  // Then try guesses: full slug, bare-name slug, without partner, with common size suffixes.
-  const guessBases = [slug, bare, slug.replace(/-ft-.+$/, "")];
+  // Slug variants: crumblcookies.com collapses "M&M's" to "mms" (no "-and-"),
+  // while our slugify expands "&" to " and ". Try both spellings when applicable.
+  const guessBases = new Set<string>([
+    slug,
+    bare,
+    slug.replace(/-ft-.+$/, ""),
+  ]);
+  for (const base of [...guessBases]) {
+    if (base.includes("-and-")) {
+      guessBases.add(base.replace(/-and-/g, ""));
+      guessBases.add(base.replace(/-and-/g, "-"));
+    }
+  }
   for (const b of guessBases) {
+    if (!b) continue;
     set.add(b);
     set.add(`${b}-set-of-2`);
     set.add(`${b}-set-of-4`);

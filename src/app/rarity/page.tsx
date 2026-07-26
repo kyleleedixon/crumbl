@@ -35,9 +35,9 @@ export default async function RarityPage() {
           Flavors must have ≥ {MIN_ELIGIBLE_WEEKS} eligible weeks before they
           rank, otherwise a brand-new debut would automatically be
           &ldquo;legendary.&rdquo; Bucket cutoffs:{" "}
-          <span className="font-medium">&lt;8%</span> Legendary,{" "}
-          <span className="font-medium">&lt;20%</span> Rare,{" "}
-          <span className="font-medium">&lt;40%</span> Uncommon, else Common.
+          <span className="font-medium">&lt;3%</span> Legendary,{" "}
+          <span className="font-medium">&lt;8%</span> Rare,{" "}
+          <span className="font-medium">&lt;15%</span> Uncommon, else Common.
         </p>
         <p className="mt-2 text-xs text-stone-500">
           {stats.totalWeeks} weeks tracked · {stats.totalFlavors} unique flavors ·{" "}

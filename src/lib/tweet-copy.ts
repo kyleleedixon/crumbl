@@ -1,41 +1,68 @@
-import type { RarityRow } from "./rarity";
+import type { RarityRow, WeekMenuItemStats, Bucket } from "./rarity";
 
-export type WeekMenuItem = {
-  name: string;
-  partnerBrand: string | null;
-  isDebut: boolean;
-  isReturn: boolean;
-};
-
-const WEEKLY_HASHTAGS = "#Crumbl #CrumblCookies #CookieDrop";
+const WEEKLY_HASHTAGS = "#Crumbl #CrumblCookies #CookieTracker";
 const RARITY_HASHTAGS = "#Crumbl #CrumblCookies #RareDrop";
 const TWEET_LIMIT = 280;
 
+const BUCKET_EMOJI: Record<Bucket, string> = {
+  legendary: "🟣",
+  rare: "🔵",
+  uncommon: "🟢",
+  common: "⚪️",
+  new: "✨",
+};
+
 export function weeklyMenuTweet(
   weekLabel: string,
-  menu: WeekMenuItem[],
+  menu: WeekMenuItemStats[],
   siteUrl: string,
 ): string {
   const debuts = menu.filter((m) => m.isDebut);
-  const returns = menu.filter((m) => !m.isDebut && m.isReturn);
-  const rollovers = menu.length - debuts.length - returns.length;
+  const comebacks = menu.filter((m) => !m.isDebut && m.isReturn);
+  const rollovers = menu.length - debuts.length - comebacks.length;
+
+  const rare = rankableMenu(menu)
+    .slice()
+    .sort((a, b) => a.rarity - b.rarity || b.weeksSinceLast! - a.weeksSinceLast!)[0];
+
+  const longestComeback = comebacks
+    .filter((m) => m.weeksSinceLast !== null)
+    .slice()
+    .sort((a, b) => (b.weeksSinceLast ?? 0) - (a.weeksSinceLast ?? 0))[0];
 
   const lines: string[] = [];
   lines.push(`🍪 Crumbl · Week of ${weekLabel}`);
-  lines.push(
-    `${menu.length} flavors · ${debuts.length} debuts · ${returns.length} comebacks · ${rollovers} returning`,
-  );
   lines.push("");
-  if (debuts.length) {
-    lines.push(`✨ ${debuts.map(displayName).slice(0, 3).join(", ")}`);
+  if (rare) {
+    lines.push(
+      `${BUCKET_EMOJI[rare.bucket]} Rarest: ${displayName(rare)} — ${formatPct(rare.rarity)} (${rare.appearanceCount}/${rare.eligibleWeeks} wks)`,
+    );
   }
-  if (returns.length) {
-    lines.push(`🔁 ${returns.map(displayName).slice(0, 3).join(", ")}`);
+  if (longestComeback && (longestComeback.weeksSinceLast ?? 0) >= 4) {
+    lines.push(
+      `🔁 Biggest comeback: ${displayName(longestComeback)} — back after ${longestComeback.weeksSinceLast} wks`,
+    );
   }
+  lines.push(
+    `✨ ${debuts.length} debut${plural(debuts.length)} · ${comebacks.length} comeback${plural(comebacks.length)} · ${rollovers} regular${plural(rollovers)}`,
+  );
   lines.push("");
   lines.push(siteUrl);
   lines.push(WEEKLY_HASHTAGS);
   return clampTweet(lines.join("\n"));
+}
+
+function rankableMenu(menu: WeekMenuItemStats[]): WeekMenuItemStats[] {
+  const eligible = menu.filter((m) => m.bucket !== "new");
+  return eligible.length ? eligible : menu;
+}
+
+function plural(n: number): string {
+  return n === 1 ? "" : "s";
+}
+
+function formatPct(rarity: number): string {
+  return `${(rarity * 100).toFixed(1)}%`;
 }
 
 export function rarityTweet(row: RarityRow, siteUrl: string): string {

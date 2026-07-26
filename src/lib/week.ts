@@ -22,7 +22,7 @@ export function nextCrumblWeekStart(now = new Date()): Date {
 }
 
 export function weekEnd(startDate: Date): Date {
-  return addDays(startDate, 5);
+  return addDays(startDate, 6);
 }
 
 export function formatWeekLabel(startDate: Date): string {
@@ -56,7 +56,7 @@ export function parseWeekRange(input: string, fallbackYear?: number):
         new Date(),
       );
       if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
-        return { start: alignToMonday(start), end: addDays(alignToMonday(start), 5) };
+        return { start: alignToMonday(start), end: addDays(alignToMonday(start), 6) };
       }
     }
     return null;
@@ -74,7 +74,7 @@ export function parseWeekRange(input: string, fallbackYear?: number):
   );
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
   const aligned = alignToMonday(start);
-  return { start: aligned, end: addDays(aligned, 5) };
+  return { start: aligned, end: addDays(aligned, 6) };
 }
 
 function alignToMonday(d: Date): Date {
