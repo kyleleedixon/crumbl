@@ -5,11 +5,11 @@ const RARITY_HASHTAGS = "#Crumbl #CrumblCookies #RareDrop";
 const TWEET_LIMIT = 280;
 
 const BUCKET_EMOJI: Record<Bucket, string> = {
-  legendary: "🟣",
+  legendary: "🟠",
   rare: "🔵",
   uncommon: "🟢",
   common: "⚪️",
-  new: "✨",
+  new: "🟣",
 };
 
 export function weeklyMenuTweet(
