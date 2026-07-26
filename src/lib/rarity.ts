@@ -118,8 +118,28 @@ export async function computeGreatestHits(limit = 25): Promise<RarityRow[]> {
   const rows = await aggregateAll();
   return rows
     .map((r) => toRarityRow(r, latest, total))
-    .sort((a, b) => b.appearanceCount - a.appearanceCount)
+    .filter((r) => r.eligibleWeeks >= MIN_ELIGIBLE_WEEKS)
+    .sort((a, b) => b.rarity - a.rarity || b.appearanceCount - a.appearanceCount)
     .slice(0, limit);
+}
+
+export async function catalogBucketCounts(): Promise<Record<Bucket, number>> {
+  const latest = await latestWeekStart();
+  const empty: Record<Bucket, number> = {
+    legendary: 0,
+    rare: 0,
+    uncommon: 0,
+    common: 0,
+    new: 0,
+  };
+  if (!latest) return empty;
+  const total = await totalWeeksTracked();
+  const rows = await aggregateAll();
+  for (const r of rows) {
+    const row = toRarityRow(r, latest, total);
+    empty[bucketFor(row)] += 1;
+  }
+  return empty;
 }
 
 export async function computeRecentDebuts(limit = 12): Promise<RarityRow[]> {

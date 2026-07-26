@@ -13,7 +13,8 @@
     "scrape": "tsx scripts/scrape-once.ts",
     "backfill": "tsx scripts/backfill.ts",
     "enrich": "tsx scripts/enrich-flavors.ts",
-    "cleanup": "tsx scripts/cleanup-flavors.ts"
+    "cleanup": "tsx scripts/cleanup-flavors.ts",
+    "preview:og": "tsx scripts/preview-og.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

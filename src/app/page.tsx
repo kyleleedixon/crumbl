@@ -109,7 +109,7 @@ export default async function HomePage() {
         />
         <LeaderCard
           title="Fan favorites"
-          subtitle="Most appearances all-time"
+          subtitle="Highest appearance rate (per eligible week)"
           rows={hits}
           href="/rarity#hits"
         />

@@ -47,7 +47,7 @@ export default async function RarityPage() {
 
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
         <Section title="Rarest flavors" subtitle="Fewest appearances per eligible week" rows={rare} />
-        <Section title="Fan favorites" subtitle="Most appearances all-time" rows={hits} id="hits" />
+        <Section title="Fan favorites" subtitle="Highest appearance rate (per eligible week)" rows={hits} id="hits" />
       </div>
 
       {newest.length > 0 && (

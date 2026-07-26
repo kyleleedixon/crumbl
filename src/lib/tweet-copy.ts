@@ -1,6 +1,6 @@
 import type { RarityRow, WeekMenuItemStats, Bucket } from "./rarity";
 
-const WEEKLY_HASHTAGS = "#Crumbl #CrumblCookies #CookieTracker";
+const WEEKLY_HASHTAGS = "#Crumbl #CrumblCookies #CrumblMenu";
 const RARITY_HASHTAGS = "#Crumbl #CrumblCookies #RareDrop";
 const TWEET_LIMIT = 280;
 
