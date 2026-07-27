@@ -511,8 +511,10 @@ function MenuRow({ rank, item }: { rank: number; item: WeekMenuItemStats }) {
   const isNew = item.bucket === "new";
   const secondary = isNew
     ? item.isDebut
-      ? "First-ever appearance"
-      : `Back after ${item.weeksSinceLast ?? "?"} wks`
+      ? "First tracked appearance"
+      : item.isReturn
+        ? `Back after ${item.weeksSinceLast ?? "?"} wks`
+        : "Crumbl staple · pre-tracker"
     : item.partnerBrand
       ? `ft. ${item.partnerBrand} · ${item.appearanceCount}/${item.eligibleWeeks} wks`
       : `${item.appearanceCount}/${item.eligibleWeeks} wks · seen ${weeksAgoLabel(item.weeksSinceLast)}`;
@@ -593,7 +595,7 @@ function MenuRow({ rank, item }: { rank: number; item: WeekMenuItemStats }) {
               lineHeight: 1,
             }}
           >
-            {item.isDebut ? "Debut" : "Return"}
+            {item.isDebut ? "Debut" : item.isReturn ? "Return" : "Classic"}
           </div>
         ) : (
           <div

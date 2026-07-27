@@ -1,6 +1,7 @@
 import { and, eq, lt } from "drizzle-orm";
 import { db } from "@/db/client";
 import { appearances, flavors, weeks } from "@/db/schema";
+import { canonicalSlug, isLegacyStaple } from "./aliases";
 import type { ScrapedWeek } from "./scrape/types";
 
 export type IngestResult = {
@@ -35,10 +36,11 @@ export async function ingestScrapedWeek(week: ScrapedWeek): Promise<IngestResult
   const returningFlavors: string[] = [];
 
   for (const f of week.flavors) {
+    const slug = canonicalSlug(f.slug);
     const [existing] = await db
       .select()
       .from(flavors)
-      .where(eq(flavors.slug, f.slug))
+      .where(eq(flavors.slug, slug))
       .limit(1);
 
     let flavorRow = existing;
@@ -46,7 +48,7 @@ export async function ingestScrapedWeek(week: ScrapedWeek): Promise<IngestResult
       const [inserted] = await db
         .insert(flavors)
         .values({
-          slug: f.slug,
+          slug,
           name: f.name,
           description: f.description ?? null,
           category: f.isNCD ? "ncd" : "cookie",
@@ -80,7 +82,7 @@ export async function ingestScrapedWeek(week: ScrapedWeek): Promise<IngestResult
       )
       .limit(1);
 
-    const isDebut = priorAppearances.length === 0;
+    const isDebut = priorAppearances.length === 0 && !isLegacyStaple(slug);
     const isReturn = !isDebut && !!f.isNew;
     if (isDebut) newFlavors.push(f.name);
     else if (isReturn) returningFlavors.push(f.name);
