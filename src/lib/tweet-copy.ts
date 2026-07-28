@@ -9,6 +9,7 @@ const BUCKET_EMOJI: Record<Bucket, string> = {
   rare: "🔵",
   uncommon: "🟢",
   common: "⚪️",
+  classic: "🩵",
   new: "🟣",
 };
 
@@ -53,7 +54,7 @@ export function weeklyMenuTweet(
 }
 
 function rankableMenu(menu: WeekMenuItemStats[]): WeekMenuItemStats[] {
-  const eligible = menu.filter((m) => m.bucket !== "new");
+  const eligible = menu.filter((m) => m.bucket !== "new" && m.bucket !== "classic");
   return eligible.length ? eligible : menu;
 }
 

@@ -1,6 +1,7 @@
 import { sql, desc, asc, eq, and, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import { appearances, flavors, weeks } from "@/db/schema";
+import { isLegacyStaple } from "./aliases";
 
 const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 export const MIN_ELIGIBLE_WEEKS = 8;
@@ -20,12 +21,14 @@ export type RarityRow = {
   rawRarity: number; // appearances / totalTrackedWeeks
 };
 
-export type Bucket = "legendary" | "rare" | "uncommon" | "common" | "new";
+export type Bucket = "legendary" | "rare" | "uncommon" | "common" | "classic" | "new";
 
 export function bucketFor(row: {
   rarity: number;
   eligibleWeeks: number;
+  slug?: string;
 }): Bucket {
+  if (row.slug && isLegacyStaple(row.slug)) return "classic";
   if (row.eligibleWeeks < MIN_ELIGIBLE_WEEKS) return "new";
   const pct = row.rarity * 100;
   if (pct < 3) return "legendary";
@@ -35,7 +38,14 @@ export function bucketFor(row: {
 }
 
 export function bucketLabel(b: Bucket): string {
-  return { legendary: "Legendary", rare: "Rare", uncommon: "Uncommon", common: "Common", new: "New" }[b];
+  return {
+    legendary: "Legendary",
+    rare: "Rare",
+    uncommon: "Uncommon",
+    common: "Common",
+    classic: "Classic",
+    new: "New",
+  }[b];
 }
 
 export async function totalWeeksTracked(): Promise<number> {
@@ -130,6 +140,7 @@ export async function catalogBucketCounts(): Promise<Record<Bucket, number>> {
     rare: 0,
     uncommon: 0,
     common: 0,
+    classic: 0,
     new: 0,
   };
   if (!latest) return empty;
@@ -252,7 +263,7 @@ export async function weekInsights(weekId: number): Promise<WeekMenuItemStats[]>
     const appearanceCount = t?.appearanceCount ?? 1;
     const eligibleWeeks = Math.max(1, weeksBetween(firstSeen, latest) + 1);
     const rarity = appearanceCount / eligibleWeeks;
-    const bucket = bucketFor({ rarity, eligibleWeeks });
+    const bucket = bucketFor({ rarity, eligibleWeeks, slug: m.slug });
     const prev = prevMap.get(m.slug) ?? null;
     const weeksSinceLast = prev
       ? weeksBetween(prev, current.startDate)
@@ -323,7 +334,7 @@ export async function flavorHistory(slug: string) {
     first && latest ? Math.max(1, weeksBetween(first, latest) + 1) : 1;
   const longestGap = longestGapBetweenAppearances(appearanceRows.map((a) => a.startDate));
   const rarity = eligibleWeeks ? appearanceRows.length / eligibleWeeks : 0;
-  const bucket = bucketFor({ rarity, eligibleWeeks });
+  const bucket = bucketFor({ rarity, eligibleWeeks, slug });
 
   return {
     flavor,

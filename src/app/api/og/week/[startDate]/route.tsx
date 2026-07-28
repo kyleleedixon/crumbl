@@ -27,10 +27,11 @@ const BUCKET_COLOR: Record<Bucket, { bg: string; fg: string; soft: string }> = {
   rare: { bg: "#2563eb", fg: "#eff6ff", soft: "rgba(37, 99, 235, 0.10)" },       // blue
   uncommon: { bg: "#16a34a", fg: "#f0fdf4", soft: "rgba(22, 163, 74, 0.10)" },   // green
   common: { bg: "#6b7280", fg: "#f9fafb", soft: "rgba(107, 114, 128, 0.10)" },   // gray
+  classic: { bg: "#0d9488", fg: "#f0fdfa", soft: "rgba(13, 148, 136, 0.10)" },   // teal
   new: { bg: "#7c3aed", fg: "#f5f3ff", soft: "rgba(124, 58, 237, 0.10)" },       // violet
 };
 
-const BUCKET_ORDER: Bucket[] = ["legendary", "rare", "uncommon", "common", "new"];
+const BUCKET_ORDER: Bucket[] = ["legendary", "rare", "uncommon", "common", "classic", "new"];
 
 const THUMB_SIZE = 56;
 
@@ -52,17 +53,25 @@ export async function GET(
     count: menu.filter((m) => m.bucket === b).length,
   }));
 
-  // Rank rarest first, but push "new" items (too few weeks to rank) to the
-  // bottom so the ranking above them is meaningful. Within new items, debuts
-  // come before returns.
+  // Ranked flavors first (rarest → common), then classics (Crumbl staples
+  // predating the tracker), then new/unranked flavors at the bottom.
+  const BUCKET_RANK: Record<Bucket, number> = {
+    legendary: 0,
+    rare: 1,
+    uncommon: 2,
+    common: 3,
+    classic: 4,
+    new: 5,
+  };
   const sorted = menu.slice().sort((a, b) => {
-    const aNew = a.bucket === "new";
-    const bNew = b.bucket === "new";
-    if (aNew !== bNew) return aNew ? 1 : -1;
-    if (aNew) {
+    const ra = BUCKET_RANK[a.bucket];
+    const rb = BUCKET_RANK[b.bucket];
+    if (ra !== rb) return ra - rb;
+    if (a.bucket === "new") {
       if (a.isDebut !== b.isDebut) return a.isDebut ? -1 : 1;
       return a.name.localeCompare(b.name);
     }
+    if (a.bucket === "classic") return a.name.localeCompare(b.name);
     return a.rarity - b.rarity;
   });
 
@@ -249,7 +258,9 @@ function DistributionSection({
 }
 
 function CatalogRarity({ counts }: { counts: Record<Bucket, number> }) {
-  const buckets: Bucket[] = ["legendary", "rare", "uncommon", "common"];
+  const buckets: Bucket[] = counts.classic > 0
+    ? ["legendary", "rare", "uncommon", "common", "classic"]
+    : ["legendary", "rare", "uncommon", "common"];
   const total = buckets.reduce((s, b) => s + counts[b], 0);
   return (
     <div style={{ display: "flex", flexDirection: "column", marginTop: 14 }}>
@@ -509,15 +520,19 @@ function MenuList({ items }: { items: WeekMenuItemStats[] }) {
 function MenuRow({ rank, item }: { rank: number; item: WeekMenuItemStats }) {
   const color = BUCKET_COLOR[item.bucket];
   const isNew = item.bucket === "new";
-  const secondary = isNew
-    ? item.isDebut
-      ? "First tracked appearance"
-      : item.isReturn
-        ? `Back after ${item.weeksSinceLast ?? "?"} wks`
-        : "Crumbl staple · pre-tracker"
-    : item.partnerBrand
-      ? `ft. ${item.partnerBrand} · ${item.appearanceCount}/${item.eligibleWeeks} wks`
-      : `${item.appearanceCount}/${item.eligibleWeeks} wks · seen ${weeksAgoLabel(item.weeksSinceLast)}`;
+  const isClassic = item.bucket === "classic";
+  const isUnranked = isNew || isClassic;
+  const secondary = isClassic
+    ? "Crumbl staple · pre-tracker"
+    : isNew
+      ? item.isDebut
+        ? "First tracked appearance"
+        : item.isReturn
+          ? `Back after ${item.weeksSinceLast ?? "?"} wks`
+          : "Not yet ranked"
+      : item.partnerBrand
+        ? `ft. ${item.partnerBrand} · ${item.appearanceCount}/${item.eligibleWeeks} wks`
+        : `${item.appearanceCount}/${item.eligibleWeeks} wks · seen ${weeksAgoLabel(item.weeksSinceLast)}`;
   return (
     <div
       style={{
@@ -584,7 +599,7 @@ function MenuRow({ rank, item }: { rank: number; item: WeekMenuItemStats }) {
           minWidth: 96,
         }}
       >
-        {isNew ? (
+        {isUnranked ? (
           <div
             style={{
               display: "flex",
@@ -595,7 +610,13 @@ function MenuRow({ rank, item }: { rank: number; item: WeekMenuItemStats }) {
               lineHeight: 1,
             }}
           >
-            {item.isDebut ? "Debut" : item.isReturn ? "Return" : "Classic"}
+            {isClassic
+              ? "Classic"
+              : item.isDebut
+                ? "Debut"
+                : item.isReturn
+                  ? "Return"
+                  : "Unranked"}
           </div>
         ) : (
           <div
@@ -623,7 +644,7 @@ function MenuRow({ rank, item }: { rank: number; item: WeekMenuItemStats }) {
             marginTop: 3,
           }}
         >
-          {isNew ? "New" : bucketLabel(item.bucket)}
+          {bucketLabel(item.bucket)}
         </div>
       </div>
     </div>
