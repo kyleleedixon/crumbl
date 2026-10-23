@@ -7,6 +7,8 @@
 // product and we want the appearance to merge into the existing flavor row.
 export const SLUG_ALIASES: Record<string, string> = {
   "milk-chocolate-chip-cookie": "chocolate-chip-cookie",
+  "chocolate-chip-cookie-thin": "chocolate-chip-cookie-thins",
+  "chocolate-peanut-butter-brownie-ft-reeses-pieces": "chocolate-peanut-butter-brownie-ft-reeses",
 };
 
 // Slugs whose corresponding flavor is a well-known Crumbl staple that existed

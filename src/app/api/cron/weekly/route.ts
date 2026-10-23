@@ -9,12 +9,25 @@ import { siteUrl, isAuthorizedCron } from "@/lib/env";
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
+const MIN_FLAVORS = 4;
+
 export async function GET(request: Request) {
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   const scraped = await scrapeCrumblOfficial();
+  // A near-empty scrape means Crumbl changed their markup, not their menu.
+  // Fail loudly before writing an empty week or tweeting about it.
+  if (scraped.flavors.length < MIN_FLAVORS) {
+    console.error(
+      `[cron/weekly] scrape returned ${scraped.flavors.length} flavors for ${scraped.startDate}; aborting`,
+    );
+    return NextResponse.json(
+      { error: "scrape_too_small", startDate: scraped.startDate, flavors: scraped.flavors.length },
+      { status: 500 },
+    );
+  }
   const ingested = await ingestScrapedWeek(scraped);
   const menu = await weekInsights(ingested.weekId);
 

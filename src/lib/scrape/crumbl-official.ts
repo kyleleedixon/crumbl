@@ -11,8 +11,9 @@ import {
 import type { ScrapedWeek, ScrapedFlavor } from "./types";
 
 const CRUMBL_URL = "https://crumblcookies.com/";
+// Crumbl has served both absolute and root-relative profile links; accept either.
 const PROFILE_HREF_REGEX =
-  /https?:\/\/crumblcookies\.com\/profiles\/([a-z0-9-]+)/gi;
+  /(?:https?:\/\/crumblcookies\.com|["'(])\/profiles\/([a-z0-9-]+)/gi;
 
 export async function scrapeCrumblOfficial(now = new Date()): Promise<ScrapedWeek> {
   const html = await fetchHtml(CRUMBL_URL);
@@ -36,13 +37,16 @@ export async function scrapeCrumblOfficial(now = new Date()): Promise<ScrapedWee
     return null;
   };
 
-  const push = (raw: string, extras?: { description?: string | null; imageUrl?: string | null }) => {
+  const push = (
+    raw: string,
+    extras?: { description?: string | null; imageUrl?: string | null; profileSlug?: string },
+  ) => {
     const parsed = parseFlavorLine(raw);
     if (!parsed.name || parsed.name.length < 3) return;
     if (!isLikelyFlavor(parsed.name, parsed.slug)) return;
     if (seen.has(parsed.slug)) return;
     const nameSlug = slugify(parsed.name);
-    const profileSlug = matchProfile(nameSlug);
+    const profileSlug = extras?.profileSlug ?? matchProfile(nameSlug);
     if (!profileSlug) return;
     seen.add(parsed.slug);
     flavors.push({
@@ -59,8 +63,17 @@ export async function scrapeCrumblOfficial(now = new Date()): Promise<ScrapedWee
     });
   };
 
+  // Primary: menu cards link to the profile and carry the full display name
+  // (including "ft. Partner") as the first image's alt text.
+  $("a[href*='/profiles/']").each((_, a) => {
+    const href = $(a).attr("href") ?? "";
+    const profileSlug = href.match(/\/profiles\/([a-z0-9-]+)/i)?.[1];
+    const alt = $(a).find("img[alt]").first().attr("alt")?.trim();
+    if (profileSlug && alt) push(alt, { profileSlug });
+  });
+
   const nextData = $("#__NEXT_DATA__").html();
-  if (nextData) {
+  if (flavors.length < 4 && nextData) {
     try {
       const json = JSON.parse(nextData);
       collectFromNextData(json, (raw, extras) => push(raw, extras));
